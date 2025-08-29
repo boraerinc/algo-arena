@@ -1,14 +1,3 @@
-// How to use templates in separate compilation
-// How to use std::initializer_list
-// Should push_back take in a const ref?
-// Should pop_back return popped element?
-// How is pop_back implemented in the standard library? are there guard rails
-// for removing elements at size 0?
-// What about push_back at size_t's max value?
-// Iterator vs. Const Iterator ?
-// Should I still use function declarations and separate definitions 
-
-
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
@@ -16,7 +5,7 @@
 const size_t DEFAULT_SIZE = 10;
 
 template<typename T>
-class Vector{
+class Vector {
     T* data;
     size_t theSize;
     size_t theCapacity;
@@ -25,68 +14,81 @@ class Vector{
 
         T* ptr;
 
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+
       public:
 
-        Iterator(T* aPtr) { 
+        Iterator(T* aPtr) : ptr(aPtr) {}
 
         Iterator operator++(int) {
           Iterator res = *this;
           ++ptr;
           return res;
-        };
+        }
 
         Iterator& operator++() {
           ++ptr;
           return *this;
-        };
+        }
 
         T& operator*() const {
           return *ptr;
-        };
+        }
     };
 
     class Const_Iterator {
-      public:
+
         const T* ptr;
 
+        friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
+
+      public:
+
+        Const_Iterator(const T* aPtr): ptr(aPtr) {}
+
         Const_Iterator operator++(int) {
-          Iterator res = *this;
+          Const_Iterator res = *this;
           ++ptr;
           return res;
-        };
+        }
 
         Const_Iterator& operator++() {
           ++ptr;
           return *this;
-        };
+        }
 
-        T operator*() const {
+        const T& operator*() const {
           return *ptr;
-        };
+        }
     };
 
-  public:
-    Vector() : theSize(0), theCapacity(1), data(new T[1]) {}; 
 
-    Vector(const T& val, size_t theSize) : theSize(theSize), theCapacity(theSize + 1), data(new T[theSize]) {
+  public:
+
+    Vector(): data(nullptr), theSize(0), theCapacity(0)  {}
+
+    Vector(const T& val, size_t theSize) : theSize(theSize), theCapacity(theSize), data(new T[theSize]) {
       for(size_t ndx = 0; ndx < theSize; ++ndx) {
         data[ndx] = val;
       }
-    };
+    }
 
-    Vector(std::initializer_list<T> vals) {
-
-    }; 
+    Vector(std::initializer_list<T> vals): theSize(vals.size()), theCapacity(theSize), data(new T[theCapacity]) {
+      size_t ndx = 0;
+      for(const T& val : vals) {
+        data[ndx++] = val;
+      }
+    }
 
     ~Vector() {
       delete[] data;
-    };
+    }
 
-    Vector(const Vector& rhs) : theSize(rhs.theSize), theCapacity(rhs.theCapacity), data(new T[rhs.theSize]) {
+    Vector(const Vector& rhs) : theSize(rhs.theSize), theCapacity(rhs.theCapacity), data(new T[rhs.theCapacity]) {
       for(size_t ndx = 0; ndx < theSize; ++ndx) {
         data[ndx] = rhs.data[ndx];
       }
-    };
+    }
 
     Vector& operator=(const Vector& rhs) {
       if (this == &rhs) return *this;
@@ -105,32 +107,35 @@ class Vector{
       return *this;
     }
 
-    Vector(Vector&& rhs) : theSize(rhs.theSize), theCapacity(rhs.theCapacity), data(rhs.data) {
+    Vector(Vector&& rhs) noexcept : theSize(rhs.theSize), theCapacity(rhs.theCapacity), data(rhs.data) {
       rhs.data = nullptr;
-    };
+      rhs.theSize = 0;
+      rhs.theCapacity = 0;
+    }
 
-    Vector& operator=(Vector&& rhs) {
+    Vector& operator=(Vector&& rhs) noexcept {
       if (this == &rhs) return *this;
 
       delete[] data;
 
       theSize = rhs.theSize;
       theCapacity = rhs.theCapacity;
-
       data = rhs.data;
 
       rhs.data = nullptr;
+      rhs.theSize = 0;
+      rhs.theCapacity = 0;
 
       return *this;
-    };
+    }
 
-    size_t size() const {
+    size_t size() const noexcept {
       return theSize;
-    };
+    }
 
-    size_t capacity() const {
+    size_t capacity() const noexcept {
       return theCapacity;
-    };
+    }
   
     void resize() {
       if(theSize < theCapacity) return;
@@ -153,7 +158,7 @@ class Vector{
       if ( theSize == theCapacity ) resize();
       data[theSize] = val;
       ++theSize;
-    };
+    }
 
     void push_back(T&& val) {
       if ( theSize == theCapacity ) resize();
@@ -165,29 +170,50 @@ class Vector{
       if(theSize > 0) {
         --theSize;
       }
-    };
+    }
 
     T operator[](size_t ndx) const {
       return data[ndx];
-    };
+    }
 
     T& operator[](size_t ndx) {
       return data[ndx];
-    };
+    }
 
     Const_Iterator begin() const {
       return Const_Iterator(data);
-    };
+    }
 
     Iterator begin() {
       return Iterator(data);
-    };
+    }
 
     Const_Iterator end() const {
       return Const_Iterator(data+theSize);
-    };
+    }
 
     Iterator end() {
       return Iterator(data+theSize);
-    };
+    }
 };
+
+template <typename T>
+bool operator==(const typename Vector<T>::Iterator& lhs, const typename Vector<T>::Iterator& rhs) {
+ return lhs.ptr == rhs.ptr;  
+}
+
+template <typename T>
+bool operator!=(const typename Vector<T>::Iterator& lhs, const typename Vector<T>::Iterator& rhs) {
+ return !(lhs == rhs);  
+}
+
+
+template <typename T>
+bool operator==(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
+  return lhs.ptr == rhs.ptr;
+}
+
+template <typename T>
+bool operator!=(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
+  return !(lhs == rhs);
+}
