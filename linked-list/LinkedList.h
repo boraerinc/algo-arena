@@ -21,7 +21,46 @@ struct LinkedListNode {
 template <typename T>
 class LinkedList {
   // iterator class
-  //
+  class Iterator {
+    LinkedListNode<T>* m_ptr;
+
+    Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
+
+    Iterator& operator++() {
+      m_ptr = m_ptr->next;
+      return *this;
+    }
+
+    Iterator operator++(int) {
+      Iterator res(*this);
+      m_ptr = m_ptr->next;
+      return res;
+    }
+    
+    friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+  };
+
+
+  class Const_Iterator {
+    LinkedListNode<T>* m_ptr;
+
+    Const_Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
+
+    Const_Iterator& operator++() {
+      m_ptr = m_ptr->next;
+      return *this;
+    }
+
+    Const_Iterator operator++(int) {
+      Const_Iterator res(*this);
+      m_ptr = m_ptr->next;
+      return res;
+    }
+    
+    friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
+
+  };
+      
   // const iterator class
   LinkedListNode<T>* head;
 
@@ -118,7 +157,7 @@ public:
       std::cerr << "Tried to use `front` on empty list! \n";
       exit(1);
     }
-    return *(head);
+    return head->data; 
   }
 
   T& front() {
@@ -126,7 +165,7 @@ public:
       std::cerr << "Tried to use `front` on empty list! \n";
       exit(1);
     }
-    return *(head);
+    return head->data;
   }
 
   const T& back() const {
@@ -135,10 +174,10 @@ public:
       exit(1);
     }
     LinkedListNode<T>* curr = head;
-    while(curr != nullptr) {
+    while(curr->next != nullptr) {
       curr = curr->next;
     }
-    return *curr;
+    return curr->data;
   }
   T& back() {
     if(empty()) {
@@ -146,13 +185,28 @@ public:
       exit(1);
     }
     LinkedListNode<T>* curr = head;
-    while(curr != nullptr) {
+    while(curr->data != nullptr) {
       curr = curr->next;
     }
-    return *curr;
+    return curr->data;
   }
   
 };
+template <typename T>
+bool operator==(const typename LinkedList<T>::Iterator& lhs, const typename LinkedList<T>::Iterator& rhs) {
+  return lhs.m_ptr == rhs.m_ptr;
+}
 
+template <typename T>
+bool operator!=(const typename LinkedList<T>::Iterator& lhs, const typename LinkedList<T>::Iterator& rhs) {
+  return !(lhs == rhs);
+}
+template <typename T>
+bool operator==(const typename LinkedList<T>::Const_Iterator& lhs, const typename LinkedList<T>::Const_Iterator& rhs) {
+  return lhs.m_ptr == rhs.m_ptr;
+}
 
-
+template <typename T>
+bool operator!=(const typename LinkedList<T>::Const_Iterator& lhs, const typename LinkedList<T>::Const_Iterator& rhs) {
+  return !(lhs == rhs);
+}
