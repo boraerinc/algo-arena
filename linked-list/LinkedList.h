@@ -22,6 +22,7 @@ template <typename T>
 class LinkedList {
   // iterator class
   class Iterator {
+    public:
     LinkedListNode<T>* m_ptr;
 
     Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
@@ -37,12 +38,17 @@ class LinkedList {
       return res;
     }
     
+    T& operator*() const {
+      return m_ptr->data;
+    }
+
     friend bool operator==(const Iterator& lhs, const Iterator& rhs);
   };
 
 
   class Const_Iterator {
-    LinkedListNode<T>* m_ptr;
+    public:
+    const LinkedListNode<T>* m_ptr;
 
     Const_Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
 
@@ -57,6 +63,10 @@ class LinkedList {
       return res;
     }
     
+    T operator*() const {
+      return m_ptr->data;
+    }
+
     friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
 
   };
