@@ -1,14 +1,8 @@
 #include <cassert>
+#include <stdexcept>
 #include <vector>
 #include <iostream>
-
-// should a singly linked list even have a "head" member?
-// or should it just be the node itself?
-// If it has a head, then should that head act as padding,
-// holding no data but just pointing to the first element?
-// Should LinkedListNodes have move semantics?
-// How do you handle something like `T data` in a move oeprator?
-// You can't set values to nullptr, nor can you call a destructor on them.
+#include <utility>
 
 template <typename T>
 struct LinkedListNode {
@@ -20,7 +14,7 @@ struct LinkedListNode {
 
 template <typename T>
 class LinkedList {
-  // iterator class
+
   class Iterator {
     public:
     LinkedListNode<T>* m_ptr;
@@ -42,6 +36,10 @@ class LinkedList {
       return m_ptr->data;
     }
 
+    T* operator->() const {
+      return m_ptr;
+    }
+
     friend bool operator==(const Iterator& lhs, const Iterator& rhs);
   };
 
@@ -51,6 +49,9 @@ class LinkedList {
     const LinkedListNode<T>* m_ptr;
 
     Const_Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
+
+    // Convert Iterator to Const Iterator
+    Const_Iterator(const Iterator& rhs) : m_ptr(rhs.aPtr) {}
 
     Const_Iterator& operator++() {
       m_ptr = m_ptr->next;
@@ -63,24 +64,22 @@ class LinkedList {
       return res;
     }
     
-    T operator*() const {
+    const T& operator*() const {
       return m_ptr->data;
     }
 
-    friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
+    const T* operator->() const {
+      return m_ptr;
+    }
 
+    friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
   };
       
-  // const iterator class
   LinkedListNode<T>* head;
 
   size_t m_size;
 
-public:
-  
-  LinkedList<T>() : head(nullptr), m_size(0) { }
-
-  ~LinkedList<T>() {
+  void cleanup() noexcept {
     LinkedListNode<T>* curr = head;
     while(curr != nullptr) {
       LinkedListNode<T>* nxt = curr->next;
@@ -88,6 +87,12 @@ public:
       curr = nxt;
     }
   }
+
+public:
+  
+  LinkedList<T>() : head(nullptr), m_size(0) { }
+
+  ~LinkedList<T>() { cleanup(); }
 
   LinkedList<T>(const LinkedList<T>& rhs) : head(nullptr), m_size(rhs.m_size) {
     if(! rhs.empty()) {
@@ -95,53 +100,23 @@ public:
       LinkedListNode<T>* r_curr = (rhs.head)->next;
       LinkedListNode<T>* l_curr = head;
       while(r_curr != nullptr) {
-        l_curr->setNext(new LinkedListNode<T>(r_curr->data, nullptr));
+        l_curr.next = new LinkedListNode<T>(r_curr->data, nullptr);
         l_curr = l_curr->next;
         r_curr = r_curr->next;
       }
     }
   }
 
-  LinkedList<T>& operator=(const LinkedList<T>& rhs) { 
-    if( this == &rhs ) { return *this; }
-    
-    LinkedListNode<T>* curr = head;
-    while(curr != nullptr) {
-      LinkedListNode<T>* nxt = curr->next;
-      delete curr;
-      curr = nxt;
-    }
-
-    head = nullptr;
-    m_size = rhs.m_size;
-
-    if(! rhs.empty()) {
-      head = new LinkedListNode<T>(rhs.head->data, nullptr);
-      LinkedListNode<T>* r_curr = (rhs.head)->next;
-      LinkedListNode<T>* l_curr = head;
-      while(r_curr != nullptr) {
-        l_curr->setNext(new LinkedListNode<T>(r_curr->data, nullptr));
-        l_curr = l_curr->next;
-        r_curr = r_curr->next;
-      }
-    }
-
+  LinkedList<T>& operator=(LinkedList<T> rhs) { 
+    LinkedList<T> tmp(rhs);
+    std::swap(head, tmp.head);
+    std::swap(m_size, tmp.m_size);
     return *this;
   }
 
-  // move copy constructor
   LinkedList<T>(LinkedList<T>&& rhs) noexcept : head(rhs.head), m_size(rhs.m_size) {
     rhs.head = nullptr;
     rhs.m_size = 0;
-  }
-
-  LinkedList<T>& operator=(LinkedList<T>&& rhs) noexcept {
-    if ( this == &rhs ) { return *this; }
-    head = rhs.head;
-    m_size = rhs.m_size;
-    rhs.head = nullptr;
-    rhs.m_size = 0;
-    return *this;
   }
   
   void push_front(const T& val) {
@@ -162,26 +137,39 @@ public:
 
   bool empty() const noexcept { return m_size == 0; }
 
+  Const_Iterator begin() const {
+    return Const_Iterator(head);
+  }
+
+  Iterator begin() {
+    return Iterator(head);
+  }
+
+  Const_Iterator end() const {
+    return Const_Iterator(back());
+  }
+
+  Iterator end() {
+    return Iterator(back());
+  }
+
   const T& front() const {
     if(empty()) {
-      std::cerr << "Tried to use `front` on empty list! \n";
-      exit(1);
+      throw std::out_of_range("Tried to use `front()` on empty list! \n");
     }
     return head->data; 
   }
 
   T& front() {
     if(empty()) {
-      std::cerr << "Tried to use `front` on empty list! \n";
-      exit(1);
+      throw std::out_of_range("Tried to use `front()` on empty list! \n");
     }
     return head->data;
   }
 
   const T& back() const {
     if(empty()) {
-      std::cerr << "Tried to use `back()` on empty list! \n";
-      exit(1);
+      throw std::out_of_range("Tried to use `back()` on empty list! \n");
     }
     LinkedListNode<T>* curr = head;
     while(curr->next != nullptr) {
@@ -191,11 +179,10 @@ public:
   }
   T& back() {
     if(empty()) {
-      std::cerr << "Tried to use `back()` on empty list! \n";
-      exit(1);
+      throw std::out_of_range("Tried to use `back()` on empty list! \n");
     }
     LinkedListNode<T>* curr = head;
-    while(curr->data != nullptr) {
+    while(curr->next != nullptr) {
       curr = curr->next;
     }
     return curr->data;
