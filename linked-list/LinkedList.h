@@ -137,22 +137,33 @@ public:
 
   bool empty() const noexcept { return m_size == 0; }
 
-  Const_Iterator begin() const {
-    return Const_Iterator(head);
-  }
-
+  // const and non-const begin
   Iterator begin() {
     return Iterator(head);
   }
 
+  Const_Iterator begin() const {
+    return Const_Iterator(head);
+  }
+  
+  // const and non-const begin
   Const_Iterator end() const {
-    return Const_Iterator(back());
+    return Const_Iterator(nullptr);
   }
 
   Iterator end() {
-    return Iterator(back());
+    return Iterator(nullptr);
   }
 
+  // cbegin and cend for C++11 and further
+  Const_Iterator cbegin() const {
+    return Const_Iterator(head);
+  }
+
+  Const_Iterator cend() const {
+    return Const_Iterator(nullptr);
+  }
+  
   const T& front() const {
     if(empty()) {
       throw std::out_of_range("Tried to use `front()` on empty list! \n");
@@ -177,6 +188,7 @@ public:
     }
     return curr->data;
   }
+
   T& back() {
     if(empty()) {
       throw std::out_of_range("Tried to use `back()` on empty list! \n");
