@@ -1,6 +1,7 @@
+#include <cmath>
 #include <cstddef>
-
-
+#include <initializer_list>
+#include <stdexcept>
 
 template <typename T>
 struct DLLNode {
@@ -15,17 +16,65 @@ struct DLLNode {
 template<typename T>
 class DoublyLinkedList {
 
-  class Iterator {};
+  struct Iterator {
+    T* m_Ptr;
+    Iterator(T* ptr) : m_Ptr(ptr) {}
 
-  class Const_Iterator {};
+    Iterator& operator++(int) {
+      Iterator res = *this;
+      m_Ptr = m_Ptr->m_Next;
+      return res;
+    }
+
+    Iterator& operator++() {
+      m_Ptr = m_Ptr->m_Next;
+      return *this;
+    }
+
+    T& operator*() const { // is this const??
+      return *(m_Ptr);
+    }
+  };
+
+  struct Const_Iterator {
+    const T* m_Ptr;
+    Const_Iterator(const T* ptr) : m_Ptr(ptr) {}
+    Const_Iterator(Iterator it) : m_Ptr(it.m_Ptr) {}
+
+    Const_Iterator& operator++(int) {
+      Const_Iterator res = *this;
+      m_Ptr = m_Ptr->m_Next;
+      return res;
+    }
+
+    Const_Iterator& operator++() {
+      m_Ptr = m_Ptr->m_Next;
+      return *this;
+    }
+
+    const T& operator*() const {
+      return *(m_Ptr);
+    }
+  };
+
+  friend bool operator==(const Iterator& lhs, const Iterator &rhs);
   
+  friend bool operator==(const Const_Iterator& lhs, const Const_Iterator &rhs);
+
   DLLNode<T>* m_Head;
   DLLNode<T>* m_Tail;
   size_t m_Size;
 
 public:
-  DoublyLinkedList(DLLNode<T>* head) : m_Head(head), m_Tail(nullptr), m_Size(0) {
+  //Default Constructor
+  DoublyLinkedList<T>() : m_Head(nullptr), m_Tail(nullptr), m_Size(0) {}
+
+  // Construct given a valid node
+  DoublyLinkedList<T>(DLLNode<T>* head) : m_Head(head), m_Tail(nullptr), m_Size(0) {
     if(m_Head != nullptr) {
+      if(m_Head->m_Prev != nullptr) {
+        // throw invalid param error
+      }
       DLLNode<T>* curr = m_Head;
       while (curr->m_Next != nullptr) {
         ++m_Size;
@@ -34,4 +83,188 @@ public:
       m_Tail = curr;
     }
   }
+
+  // Copy constructor
+  DoublyLinkedList<T>(const DoublyLinkedList<T>& rhs) {
+    for(const DLLNode<T>& node: rhs) {
+      this->push_front(node);
+    }
+  }
+
+  void cleanup() {
+    DLLNode<T> curr = m_Head;
+    while(curr != nullptr) {
+      DLLNode<T> prev = curr;
+      curr = curr->m_Next;
+      delete prev;
+    }
+    m_Head = nullptr;
+    m_Tail = nullptr;
+    m_Size = 0;
+  }
+
+  ~DoublyLinkedList<T>() {
+    cleanup();
+  }
+
+  // Assignment operator
+  DoublyLinkedList<T>& operator=(const DoublyLinkedList<T>& rhs) {
+    // Check for self assignment
+    if(this == &rhs) {
+      return *this;
+    }
+
+    // Free up resources
+    cleanup();
+
+    // Copy over new resources
+    for(const DLLNode<T>& node: rhs) {
+      this->push_front(node);
+    }
+
+    // Return new object
+    return *this;
+  }
+ 
+  // Move assignment operator
+  DoublyLinkedList<T>& operator=(DoublyLinkedList<T>&& rhs) noexcept {
+    // Check for self assignment
+    if(this == &rhs) {
+      return *this;
+    }
+    
+    // Steal resources
+    m_Head = rhs.m_Head;
+    m_Tail = rhs.m_Tail;
+    m_Size = rhs.m_Size;
+
+    // Leave other object in usable state
+    rhs.m_Head = nullptr;
+    rhs.m_Tail = nullptr;
+    rhs.m_Size = 0;
+
+    // Return new object
+    return *this;
+  }
+
+  // Move Constructor
+  DoublyLinkedList<T>(DoublyLinkedList&& rhs) noexcept : m_Head(rhs.m_Head), m_Tail(rhs.m_Tail), m_Size(rhs.m_Size) {
+    rhs.m_Head = nullptr;
+    rhs.m_Tail = nullptr;
+    rhs.m_Size = 0;
+  }
+
+  // Utilities
+  bool empty() const noexcept {
+    return m_Size == 0;
+  }
+
+  size_t size() const noexcept {
+    return m_Size;
+  }
+
+  void push_front(const T& rhs) {
+    DLLNode<T>* curr = new DLLNode<T>(rhs, nullptr, m_Head);
+    m_Head->prev = curr;
+    m_Head = curr;
+    ++m_Size;
+  }
+
+  void push_back(const T& rhs) {
+    DLLNode<T>* curr = new DLLNode<T>(rhs, m_Tail);
+    m_Tail->next = curr;
+    m_Tail = curr;
+    ++m_Size;
+  }
+
+  void pop_front() {
+    DLLNode<T>* curr = m_Head; 
+    m_Head = m_Head->m_Next;
+    m_Head->m_Prev = nullptr;
+    delete curr;
+    --m_Size;
+  }
+
+  void pop_back() {
+    DLLNode<T>* curr = m_Tail; 
+    m_Tail = m_Tail->m_Prev;
+    m_Tail->m_Next = nullptr;
+    delete curr;
+    --m_Size;
+  }
+
+  const T& front() const {
+    if(m_Head == nullptr) {
+      throw std::out_of_range("Tried to use front() on an empty list! \n");
+    }
+    return m_Head->m_Data;
+  }
+
+  T& front() {
+    if(m_Head == nullptr) {
+      throw std::out_of_range("Tried to use front() on an empty list! \n");
+    }
+    return m_Head->m_Data;
+  }
+  
+  const T& back() const {
+    if(m_Tail == nullptr) {
+      throw std::out_of_range("Tried to use front() on an empty list! \n");
+    }
+    return m_Tail->m_Data;
+  }
+
+  T& back() {
+    if(m_Tail == nullptr) {
+      throw std::out_of_range("Tried to use front() on an empty list! \n");
+    }
+    return m_Tail->m_Data;
+  }
+
+  DoublyLinkedList(std::initializer_list<const T> list) : m_Head(nullptr), m_Tail(nullptr), m_Size(0) {
+    for(const T& item: list) {
+      push_front(item);
+    }
+  }
+
+  // Iterators
+
+  Iterator& begin() {
+    return Iterator(m_Head);
+  }
+
+  Const_Iterator& begin() const {
+    return Const_Iterator(m_Head);
+  }
+
+  Const_Iterator& cbegin() const {
+    return Const_Iterator(m_Head);
+  }
+
+  Iterator& end() {
+    return Iterator(m_Tail);
+  }
+  Const_Iterator& end() const {
+    return Const_Iterator(m_Tail);
+  }
+  Const_Iterator& cend() const {
+    return Const_Iterator(m_Tail);
+  }
+  
 };
+template <typename T>
+bool operator==(const typename DoublyLinkedList<T>::Iterator& lhs, const typename DoublyLinkedList<T>::Iterator& rhs) {
+  return lhs.m_Ptr == rhs.m_Ptr;
+}
+template <typename T>
+bool operator!=(const typename DoublyLinkedList<T>::Iterator& lhs, const typename DoublyLinkedList<T>::Iterator& rhs) {
+  return !(lhs == rhs);
+}
+template <typename T>
+bool operator==(const typename DoublyLinkedList<T>::Const_Iterator& lhs, const typename DoublyLinkedList<T>::Const_Iterator& rhs) {
+  return lhs.m_Ptr == rhs.m_Ptr;
+}
+template <typename T>
+bool operator!=(const typename DoublyLinkedList<T>::Const_Iterator& lhs, const typename DoublyLinkedList<T>::Const_Iterator& rhs) {
+  return lhs.m_Ptr == rhs.m_Ptr;
+}
