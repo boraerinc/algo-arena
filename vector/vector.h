@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
+#include <utility>
 
 const size_t DEFAULT_SIZE = 10;
 
@@ -15,6 +16,8 @@ class Vector {
         T* ptr;
 
         friend bool operator==(const Iterator& lhs, const Iterator& rhs);
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs);
 
       public:
 
@@ -42,6 +45,8 @@ class Vector {
 
         friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
 
+        friend bool operator!=(const Const_Iterator& lhs, const Const_Iterator& rhs);
+
       public:
 
         Const_Iterator(const T* aPtr): ptr(aPtr) {}
@@ -67,13 +72,13 @@ class Vector {
 
     Vector(): data(nullptr), theSize(0), theCapacity(0)  {}
 
-    Vector(const T& val, size_t theSize) : theSize(theSize), theCapacity(theSize), data(new T[theSize]) {
+    Vector(const T& val, size_t size) : theSize(size), theCapacity(size), data(new T[size]) {
       for(size_t ndx = 0; ndx < theSize; ++ndx) {
         data[ndx] = val;
       }
     }
 
-    Vector(std::initializer_list<T> vals): theSize(vals.size()), theCapacity(theSize), data(new T[theCapacity]) {
+    Vector(std::initializer_list<T> vals): theSize(vals.size()), theCapacity(vals.size()), data(new T[vals.size()]) {
       size_t ndx = 0;
       for(const T& val : vals) {
         data[ndx++] = val;
@@ -162,7 +167,7 @@ class Vector {
 
     void push_back(T&& val) {
       if ( theSize == theCapacity ) resize();
-      data[theSize] = val;
+      data[theSize] = std::move(val);
       ++theSize;
     }
 
@@ -204,9 +209,8 @@ bool operator==(const typename Vector<T>::Iterator& lhs, const typename Vector<T
 
 template <typename T>
 bool operator!=(const typename Vector<T>::Iterator& lhs, const typename Vector<T>::Iterator& rhs) {
- return !(lhs == rhs);  
+ return !lhs.ptr != rhs.ptr;
 }
-
 
 template <typename T>
 bool operator==(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
@@ -215,5 +219,5 @@ bool operator==(const typename Vector<T>::Const_Iterator& lhs, const typename Ve
 
 template <typename T>
 bool operator!=(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
-  return !(lhs == rhs);
+  return lhs.ptr != rhs.ptr;
 }
