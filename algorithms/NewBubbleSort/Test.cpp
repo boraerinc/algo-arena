@@ -2,21 +2,23 @@
 #include <iostream>
 
 template <typename T>
-void printVec(const std::vector<T>& vec) {
-  for (const T& item: vec) {
-    std::cout << item << ", ";
-  }
-  std::cout << "\n";
+void printVec(const Vector<T>& vec) {
+//  for (const T& item: vec) {
+//    std::cout << item << ", ";
+//  }
+  
+  for(auto it = vec.begin(); it != vec.end(); ++it) {
 
+  }
+
+  std::cout << "\n";
 }
 
 int main() {
-  std::vector<int> myVec = {2, 6, 2, 9, 11, 3, 0, -1};
+  Vector<int> myVec = {2, 6, 2, 9, 11, 3, 0, -1};
   std::cout << "myVec before NewBubbleSort: \n";
   printVec(myVec);
   NewBubbleSort(myVec);
-  std::cout << "myVec after NewBubbuleSort: \n";
+  std::cout << "myVec after NewBubbleSort: \n";
   printVec(myVec);
-
-
 }

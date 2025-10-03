@@ -1,8 +1,8 @@
-#include <vector>
 #include <utility>
+#include "../../vector/vector.h"
 
 template <typename T>
-void NewBubbleSort(std::vector<T>& vec, bool ascending = true) {
+void NewBubbleSort(Vector<T>& vec, bool ascending = true) {
   bool done = false;
   size_t n = vec.size(); // illustrative purposes
   while (done == false) {
