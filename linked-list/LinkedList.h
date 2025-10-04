@@ -7,17 +7,17 @@
 template <typename T>
 struct LinkedListNode {
   T data;
-  LinkedListNode* next;
+  LinkedListNode<T>* next;
 
-  LinkedListNode(const T& val, LinkedListNode* ptr = nullptr): data(val), next(ptr) {}
+  LinkedListNode<T>(const T& val, LinkedListNode<T>* ptr = nullptr): data(val), next(ptr) {}
 };
 
 template <typename T>
 class LinkedList {
 
   class Iterator {
-    public:
     LinkedListNode<T>* m_ptr;
+    public:
 
     Iterator(LinkedListNode<T>* aPtr) : m_ptr(aPtr) {}
 
@@ -34,10 +34,6 @@ class LinkedList {
     
     T& operator*() const {
       return m_ptr->data;
-    }
-
-    T* operator->() const {
-      return m_ptr;
     }
 
     friend bool operator==(const Iterator& lhs, const Iterator& rhs);
@@ -68,10 +64,6 @@ class LinkedList {
       return m_ptr->data;
     }
 
-    const T* operator->() const {
-      return m_ptr;
-    }
-
     friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
   };
       
@@ -100,7 +92,7 @@ public:
       LinkedListNode<T>* r_curr = (rhs.head)->next;
       LinkedListNode<T>* l_curr = head;
       while(r_curr != nullptr) {
-        l_curr.next = new LinkedListNode<T>(r_curr->data, nullptr);
+        l_curr-> next = new LinkedListNode<T>(r_curr->data, nullptr);
         l_curr = l_curr->next;
         r_curr = r_curr->next;
       }

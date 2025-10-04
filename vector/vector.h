@@ -15,9 +15,13 @@ class Vector {
 
         T* ptr;
 
-        friend bool operator==(const Iterator& lhs, const Iterator& rhs);
-
-        friend bool operator!=(const Iterator& lhs, const Iterator& rhs);
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs) {
+          return lhs.ptr == rhs.ptr;  
+        }
+        
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) {
+          return lhs.ptr != rhs.ptr;
+        }
 
       public:
 
@@ -43,9 +47,13 @@ class Vector {
 
         const T* ptr;
 
-        friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs);
+        friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs) {
+          return lhs.ptr == rhs.ptr;
+        }
 
-        friend bool operator!=(const Const_Iterator& lhs, const Const_Iterator& rhs);
+        friend bool operator!=(const Const_Iterator& lhs, const Const_Iterator& rhs) {
+          return lhs.ptr != rhs.ptr;
+        }
 
       public:
 
@@ -66,8 +74,7 @@ class Vector {
           return *ptr;
         }
     };
-
-
+  
   public:
 
     Vector(): data(nullptr), theSize(0), theCapacity(0)  {}
@@ -201,23 +208,3 @@ class Vector {
       return Iterator(data+theSize);
     }
 };
-
-template <typename T>
-bool operator==(const typename Vector<T>::Iterator& lhs, const typename Vector<T>::Iterator& rhs) {
- return lhs.ptr == rhs.ptr;  
-}
-
-template <typename T>
-bool operator!=(const typename Vector<T>::Iterator& lhs, const typename Vector<T>::Iterator& rhs) {
- return !lhs.ptr != rhs.ptr;
-}
-
-template <typename T>
-bool operator==(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
-  return lhs.ptr == rhs.ptr;
-}
-
-template <typename T>
-bool operator!=(const typename Vector<T>::Const_Iterator& lhs, const typename Vector<T>::Const_Iterator& rhs) {
-  return lhs.ptr != rhs.ptr;
-}

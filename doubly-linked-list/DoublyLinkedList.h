@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <initializer_list>
 #include <stdexcept>
+#include <utility>
 
 template <typename T>
 struct DLLNode {
@@ -9,7 +10,12 @@ struct DLLNode {
   DLLNode* m_Prev;
   DLLNode* m_Next;
 
-  DLLNode(const T& data, T* prev = nullptr, T* next = nullptr) : m_Data(data),
+  // L-Value constructor
+  DLLNode<T>(const T& data, T* prev = nullptr, T* next = nullptr) : m_Data(data),
+    m_Prev(prev), m_Next(next) {}
+  
+  // R-value constructor
+  DLLNode<T>(T&& data, T* prev = nullptr, T* next = nullptr) : m_Data(std::move(data)),
     m_Prev(prev), m_Next(next) {}
 };
 
@@ -17,8 +23,8 @@ template<typename T>
 class DoublyLinkedList {
 
   struct Iterator {
-    T* m_Ptr;
-    Iterator(T* ptr) : m_Ptr(ptr) {}
+    DLLNode<T>* m_Ptr;
+    Iterator(DLLNode<T>* ptr) : m_Ptr(ptr) {}
 
     Iterator& operator++(int) {
       Iterator res = *this;
@@ -32,13 +38,24 @@ class DoublyLinkedList {
     }
 
     T& operator*() const { // is this const??
-      return *(m_Ptr);
+      return m_Ptr->m_Data;
+    }
+
+    T& operator->() const { // is this const??
+      return m_Ptr->m_Data;
+    }
+
+    friend bool operator==(const Iterator& lhs, const Iterator& rhs) {
+      return lhs.m_Ptr == rhs.m_Ptr;
+    }
+    friend bool operator!=(const Iterator& lhs, const Iterator& rhs) {
+      return lhs.m_Ptr != rhs.m_Ptr;
     }
   };
 
   struct Const_Iterator {
-    const T* m_Ptr;
-    Const_Iterator(const T* ptr) : m_Ptr(ptr) {}
+    const DLLNode<T>* m_Ptr;
+    Const_Iterator(const DLLNode<T>* ptr) : m_Ptr(ptr) {}
     Const_Iterator(Iterator it) : m_Ptr(it.m_Ptr) {}
 
     Const_Iterator& operator++(int) {
@@ -53,7 +70,16 @@ class DoublyLinkedList {
     }
 
     const T& operator*() const {
-      return *(m_Ptr);
+      return m_Ptr;
+    }
+    const T& operator->() const {
+      return m_Ptr; 
+    }
+    friend bool operator==(const Const_Iterator& lhs, const Const_Iterator& rhs) {
+      return lhs.m_Ptr == rhs.m_Ptr;
+    }
+    friend bool operator!=(const Const_Iterator& lhs, const Const_Iterator& rhs) {
+      return lhs.m_Ptr != rhs.m_Ptr;
     }
   };
 
@@ -67,10 +93,10 @@ class DoublyLinkedList {
 
 public:
   //Default Constructor
-  DoublyLinkedList<T>() : m_Head(nullptr), m_Tail(nullptr), m_Size(0) {}
+  DoublyLinkedList(): m_Head(nullptr), m_Tail(nullptr), m_Size(0) {}
 
   // Construct given a valid node
-  DoublyLinkedList<T>(DLLNode<T>* head) : m_Head(head), m_Tail(nullptr), m_Size(0) {
+  DoublyLinkedList(DLLNode<T>* head) : m_Head(head), m_Tail(nullptr), m_Size(0) {
     if(m_Head != nullptr) {
       if(m_Head->m_Prev != nullptr) {
         // throw invalid param error
@@ -85,16 +111,16 @@ public:
   }
 
   // Copy constructor
-  DoublyLinkedList<T>(const DoublyLinkedList<T>& rhs) {
+  DoublyLinkedList(const DoublyLinkedList<T>& rhs) {
     for(const DLLNode<T>& node: rhs) {
       this->push_front(node);
     }
   }
 
   void cleanup() {
-    DLLNode<T> curr = m_Head;
+    DLLNode<T>* curr = m_Head;
     while(curr != nullptr) {
-      DLLNode<T> prev = curr;
+      DLLNode<T>* prev = curr;
       curr = curr->m_Next;
       delete prev;
     }
@@ -103,7 +129,7 @@ public:
     m_Size = 0;
   }
 
-  ~DoublyLinkedList<T>() {
+  ~DoublyLinkedList(){
     cleanup();
   }
 
@@ -119,7 +145,7 @@ public:
 
     // Copy over new resources
     for(const DLLNode<T>& node: rhs) {
-      this->push_front(node);
+      this->push_front(*node);
     }
 
     // Return new object
@@ -164,16 +190,42 @@ public:
   }
 
   void push_front(const T& rhs) {
-    DLLNode<T>* curr = new DLLNode<T>(rhs, nullptr, m_Head);
-    m_Head->prev = curr;
-    m_Head = curr;
+    if(empty()) {
+      m_Head = new DLLNode<T>(rhs, nullptr, nullptr);
+      m_Tail = m_Head;
+    } else {
+      m_Head->m_Prev = new DLLNode<T>(rhs, nullptr, m_Head);
+    }
+    ++m_Size;
+  }
+  
+  void push_front(T&& rhs) {
+    if(empty()) {
+      m_Head = new DLLNode<T>(rhs, nullptr, nullptr);
+      m_Tail = m_Head;
+    } else {
+      m_Head->m_Prev = new DLLNode<T>(rhs, nullptr, m_Head);
+    }
     ++m_Size;
   }
 
   void push_back(const T& rhs) {
-    DLLNode<T>* curr = new DLLNode<T>(rhs, m_Tail);
-    m_Tail->next = curr;
-    m_Tail = curr;
+    if(empty()) {
+      m_Head = new DLLNode<T>(rhs, nullptr, nullptr);
+      m_Tail = m_Head;
+    } else {
+      m_Tail->m_Next = new DLLNode<T>(rhs, m_Tail, nullptr);
+    }
+    ++m_Size;
+  }
+  
+  void push_back(T&& rhs) {
+    if(empty()) {
+      m_Head = new DLLNode<T>(rhs, nullptr, nullptr);
+      m_Tail = m_Head;
+    } else {
+      m_Tail->m_Next = new DLLNode<T>(rhs, m_Tail, nullptr);
+    }
     ++m_Size;
   }
 
@@ -221,7 +273,7 @@ public:
     return m_Tail->m_Data;
   }
 
-  DoublyLinkedList(std::initializer_list<const T> list) : m_Head(nullptr), m_Tail(nullptr), m_Size(0) {
+  DoublyLinkedList(const std::initializer_list<T>& list) : m_Head(nullptr), m_Tail(nullptr), m_Size(0) {
     for(const T& item: list) {
       push_front(item);
     }
@@ -229,42 +281,26 @@ public:
 
   // Iterators
 
-  Iterator& begin() {
+  Iterator begin() {
     return Iterator(m_Head);
   }
 
-  Const_Iterator& begin() const {
+  Const_Iterator begin() const {
     return Const_Iterator(m_Head);
   }
 
-  Const_Iterator& cbegin() const {
+  Const_Iterator cbegin() const {
     return Const_Iterator(m_Head);
   }
 
-  Iterator& end() {
+  Iterator end() {
     return Iterator(m_Tail);
   }
-  Const_Iterator& end() const {
+  Const_Iterator end() const {
     return Const_Iterator(m_Tail);
   }
-  Const_Iterator& cend() const {
+  Const_Iterator cend() const {
     return Const_Iterator(m_Tail);
   }
   
 };
-template <typename T>
-bool operator==(const typename DoublyLinkedList<T>::Iterator& lhs, const typename DoublyLinkedList<T>::Iterator& rhs) {
-  return lhs.m_Ptr == rhs.m_Ptr;
-}
-template <typename T>
-bool operator!=(const typename DoublyLinkedList<T>::Iterator& lhs, const typename DoublyLinkedList<T>::Iterator& rhs) {
-  return !(lhs == rhs);
-}
-template <typename T>
-bool operator==(const typename DoublyLinkedList<T>::Const_Iterator& lhs, const typename DoublyLinkedList<T>::Const_Iterator& rhs) {
-  return lhs.m_Ptr == rhs.m_Ptr;
-}
-template <typename T>
-bool operator!=(const typename DoublyLinkedList<T>::Const_Iterator& lhs, const typename DoublyLinkedList<T>::Const_Iterator& rhs) {
-  return lhs.m_Ptr == rhs.m_Ptr;
-}

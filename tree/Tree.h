@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <stdexcept>
 
 template <typename T>
 struct TreeNode {
@@ -9,6 +10,14 @@ struct TreeNode {
 
   // Constructor
   TreeNode(const T& data, TreeNode* left, TreeNode* right) : m_Data(data), m_Left(left), m_Right(right) {} 
+  
+  // R-value Constructor
+  TreeNode(T&& data, TreeNode* left, TreeNode* right) : m_Data(std::move(data)), m_Left(left), m_Right(right) {} 
+
+  // Utils
+  bool isLeafNode() const noexcept {
+    return (m_Left == nullptr && m_Right == nullptr);
+  }
 };
 
 template <typename T>
@@ -74,6 +83,57 @@ class Tree {
     traverse(m_Root);
   }
 
+  bool empty() const noexcept {
+    return m_Root == nullptr;
+  }
+
+  void insert(const T& val) {
+    if(empty()) {
+      m_Root = new TreeNode<T>(val);
+    } else {
+      TreeNode<T>* curr = m_Root;
+      while(!curr->isLeafNode()){ 
+        if(val > curr->m_Data) {
+          curr = curr->m_Right;
+        } else if(val < curr->m_Data) {
+          curr = curr->m_Left;
+        } else {
+          throw std::invalid_argument("Attempted to insert a value that already exists!");
+        }
+      }
+      if(val > curr->m_Data) {
+        curr->m_Right = new TreeNode<T>(val);
+      } else if(val < curr->m_Data) {
+        curr->m_Left = new TreeNode<T>(val);
+      } else {
+        throw std::invalid_argument("Attempted to insert a value that already exists!");
+      }
+    }
+  }
+  
+  void insert(T&& val) {
+    if(empty()) {
+      m_Root = new TreeNode<T>(val);
+    } else {
+      TreeNode<T>* curr = m_Root;
+      while(!curr->isLeafNode()){ 
+        if(val > curr->m_Data) {
+          curr = curr->m_Right;
+        } else if(val < curr->m_Data) {
+          curr = curr->m_Left;
+        } else {
+          throw std::invalid_argument("Attempted to insert a value that already exists!");
+        }
+      }
+      if(val > curr->m_Data) {
+        curr->m_Right = new TreeNode<T>(val);
+      } else if(val < curr->m_Data) {
+        curr->m_Left = new TreeNode<T>(val);
+      } else {
+        throw std::invalid_argument("Attempted to insert a value that already exists!");
+      }
+    }
+  }
 };
 
 
